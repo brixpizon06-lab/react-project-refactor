@@ -16,6 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import StatCard from "@/components/StatCard";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type View = "dashboard" | "students" | "attendance" | "reports";
 
@@ -146,13 +147,16 @@ const AdminDashboard = () => {
         {/* Topbar */}
         <div className="flex justify-between items-center px-6 py-4 bg-card border-b border-border">
           <h2 className="text-lg font-semibold text-primary">Admin Panel</h2>
-          <Button
-            onClick={handleLogout}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button
+              onClick={handleLogout}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
 
         {/* Content Area */}

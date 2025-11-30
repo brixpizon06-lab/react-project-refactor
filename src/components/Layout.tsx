@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Users, Calendar, BarChart3, LayoutDashboard } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
 
 interface LayoutProps {
   children: ReactNode;
@@ -9,9 +10,11 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
+  const userRole = localStorage.getItem("userRole") || "student";
+  const dashboardPath = userRole === "admin" ? "/admin" : "/student";
 
   const navItems = [
-    { path: "/", label: "Dashboard", icon: LayoutDashboard },
+    { path: dashboardPath, label: "Dashboard", icon: LayoutDashboard },
     { path: "/students", label: "Students", icon: Users },
     { path: "/attendance", label: "Attendance", icon: Calendar },
     { path: "/reports", label: "Reports", icon: BarChart3 },
@@ -49,6 +52,7 @@ const Layout = ({ children }: LayoutProps) => {
                   </Link>
                 );
               })}
+              <ThemeToggle />
             </div>
           </div>
         </div>
