@@ -16,28 +16,61 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simple demo authentication
-    setTimeout(() => {
-      if (email && password) {
-        const userRole = email.includes("admin") ? "admin" : "student";
-        localStorage.setItem("userRole", userRole);
+    try {
+      // Check if admin login
+      if (email.includes("admin")) {
+        localStorage.setItem("userRole", "admin");
         localStorage.setItem("userEmail", email);
         
         toast({
           title: "Login successful!",
-          description: `Welcome back, ${userRole}!`,
+          description: "Welcome back, admin!",
         });
         
-        navigate(userRole === "admin" ? "/admin" : "/student");
-      } else {
+        navigate("/admin");
+        setIsLoading(false);
+        return;
+      }
+
+      // Check student credentials from database
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: student, error } = await supabase
+        .from("students")
+        .select("*")
+        .eq("email", email)
+        .eq("password", password)
+        .maybeSingle();
+
+      if (error || !student) {
         toast({
           title: "Login failed",
-          description: "Please enter valid credentials",
+          description: "Invalid email or password",
           variant: "destructive",
         });
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
-    }, 1000);
+
+      // Student login successful
+      localStorage.setItem("userRole", "student");
+      localStorage.setItem("userEmail", email);
+      localStorage.setItem("studentId", student.id);
+      
+      toast({
+        title: "Login successful!",
+        description: `Welcome back, ${student.first_name}!`,
+      });
+      
+      navigate("/student");
+    } catch (error) {
+      toast({
+        title: "Login failed",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      });
+    }
+    
+    setIsLoading(false);
   };
 
   return (

@@ -26,6 +26,7 @@ interface Student {
   guardian_name: string;
   guardian_contact: string;
   email: string;
+  password?: string;
 }
 
 const Students = () => {
@@ -43,6 +44,7 @@ const Students = () => {
     guardian_name: "",
     guardian_contact: "",
     email: "",
+    password: "",
   });
 
   useEffect(() => {
@@ -118,6 +120,7 @@ const Students = () => {
       guardian_name: student.guardian_name || "",
       guardian_contact: student.guardian_contact || "",
       email: student.email || "",
+      password: "", // Don't show existing password for security
     });
     setIsDialogOpen(true);
   };
@@ -134,6 +137,7 @@ const Students = () => {
       guardian_name: "",
       guardian_contact: "",
       email: "",
+      password: "",
     });
   };
 
@@ -253,14 +257,28 @@ const Students = () => {
                       }
                     />
                   </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="email">Email</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email *</Label>
                     <Input
                       id="email"
                       type="email"
+                      required
                       value={formData.email}
                       onChange={(e) =>
                         setFormData({ ...formData, email: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password *</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      required={!editingStudent}
+                      placeholder={editingStudent ? "Leave blank to keep current" : "Create password for student"}
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
                       }
                     />
                   </div>
