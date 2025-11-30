@@ -15,6 +15,7 @@ const StudentDashboard = () => {
   const navigate = useNavigate();
   const [currentView, setCurrentView] = useState<"dashboard" | "attendance" | "grades">("dashboard");
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
+  const [studentInfo, setStudentInfo] = useState<any>(null);
   const [stats, setStats] = useState({
     totalDays: 0,
     present: 0,
@@ -24,16 +25,33 @@ const StudentDashboard = () => {
   });
 
   useEffect(() => {
-    fetchAttendanceData();
+    fetchStudentData();
   }, []);
 
-  const fetchAttendanceData = async () => {
-    // For demo purposes, we'll use mock data
-    // In production, you'd filter by actual student ID
+  const fetchStudentData = async () => {
+    const studentId = localStorage.getItem("studentId");
+    
+    if (!studentId) {
+      navigate("/");
+      return;
+    }
+
+    // Fetch student info
+    const { data: student } = await supabase
+      .from("students")
+      .select("*")
+      .eq("id", studentId)
+      .single();
+
+    if (student) {
+      setStudentInfo(student);
+    }
+
+    // Fetch attendance records for this specific student
     const { data } = await supabase
       .from("attendance")
-      .select("*, students(*)")
-      .limit(10)
+      .select("*")
+      .eq("student_id", studentId)
       .order("date", { ascending: false });
 
     if (data) {
@@ -149,9 +167,17 @@ const StudentDashboard = () => {
                     <User className="w-8 h-8 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-foreground">John Doe</h3>
-                    <p className="text-muted-foreground">Student ID: 2024001</p>
-                    <p className="text-muted-foreground">Grade 10 - Section A</p>
+                    <h3 className="text-xl font-bold text-foreground">
+                      {studentInfo ? `${studentInfo.first_name} ${studentInfo.last_name}` : "Loading..."}
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Student ID: {studentInfo?.student_id || "N/A"}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {studentInfo?.grade && studentInfo?.section 
+                        ? `Grade ${studentInfo.grade} - Section ${studentInfo.section}`
+                        : "No grade/section assigned"}
+                    </p>
                   </div>
                 </div>
               </div>

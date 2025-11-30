@@ -66,6 +66,7 @@ export type Database = {
           guardian_name: string | null
           id: string
           last_name: string
+          password: string | null
           section: string | null
           student_id: string
           updated_at: string
@@ -80,6 +81,7 @@ export type Database = {
           guardian_name?: string | null
           id?: string
           last_name: string
+          password?: string | null
           section?: string | null
           student_id: string
           updated_at?: string
@@ -94,6 +96,7 @@ export type Database = {
           guardian_name?: string | null
           id?: string
           last_name?: string
+          password?: string | null
           section?: string | null
           student_id?: string
           updated_at?: string
