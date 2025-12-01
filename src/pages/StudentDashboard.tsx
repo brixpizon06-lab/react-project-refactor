@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { getStudentById, getAttendanceByStudent } from "@/lib/storage";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -28,7 +28,7 @@ const StudentDashboard = () => {
     fetchStudentData();
   }, []);
 
-  const fetchStudentData = async () => {
+  const fetchStudentData = () => {
     const studentId = localStorage.getItem("studentId");
     
     if (!studentId) {
@@ -37,28 +37,20 @@ const StudentDashboard = () => {
     }
 
     // Fetch student info
-    const { data: student } = await supabase
-      .from("students")
-      .select("*")
-      .eq("id", studentId)
-      .single();
+    const student = getStudentById(studentId);
 
     if (student) {
       setStudentInfo(student);
     }
 
     // Fetch attendance records for this specific student
-    const { data } = await supabase
-      .from("attendance")
-      .select("*")
-      .eq("student_id", studentId)
-      .order("date", { ascending: false });
+    const data = getAttendanceByStudent(studentId);
 
     if (data) {
       setAttendanceRecords(data);
-      const present = data.filter((a) => a.status === "Present").length;
-      const absent = data.filter((a) => a.status === "Absent").length;
-      const late = data.filter((a) => a.status === "Late").length;
+      const present = data.filter((a) => a.status === "present").length;
+      const absent = data.filter((a) => a.status === "absent").length;
+      const late = data.filter((a) => a.status === "late").length;
       const total = data.length;
 
       setStats({
@@ -78,12 +70,12 @@ const StudentDashboard = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Present":
+    switch (status.toLowerCase()) {
+      case "present":
         return "bg-success text-success-foreground";
-      case "Absent":
+      case "absent":
         return "bg-destructive text-destructive-foreground";
-      case "Late":
+      case "late":
         return "bg-warning text-warning-foreground";
       default:
         return "bg-muted text-muted-foreground";

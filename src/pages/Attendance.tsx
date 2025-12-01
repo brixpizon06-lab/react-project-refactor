@@ -8,19 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Check } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { getStudents, getAttendanceByDate, saveAttendance, Student } from "@/lib/storage";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-
-interface Student {
-  id: string;
-  student_id: string;
-  first_name: string;
-  last_name: string;
-  grade: string;
-  section: string;
-}
 
 interface AttendanceRecord {
   student_id: string;
@@ -43,28 +34,16 @@ const Attendance = () => {
     fetchAttendance();
   }, [selectedDate, students]);
 
-  const fetchStudents = async () => {
-    const { data, error } = await supabase
-      .from("students")
-      .select("*")
-      .order("last_name", { ascending: true });
-
-    if (error) {
-      toast.error("Failed to fetch students");
-      return;
-    }
-
+  const fetchStudents = () => {
+    const data = getStudents();
     setStudents(data || []);
   };
 
-  const fetchAttendance = async () => {
+  const fetchAttendance = () => {
     if (students.length === 0) return;
 
     const dateStr = format(selectedDate, "yyyy-MM-dd");
-    const { data } = await supabase
-      .from("attendance")
-      .select("*")
-      .eq("date", dateStr);
+    const data = getAttendanceByDate(dateStr);
 
     const attendanceMap: Record<string, AttendanceRecord> = {};
     
@@ -92,27 +71,20 @@ const Attendance = () => {
     }));
   };
 
-  const handleSaveAttendance = async () => {
+  const handleSaveAttendance = () => {
     setSaving(true);
     const dateStr = format(selectedDate, "yyyy-MM-dd");
 
     try {
-      // Delete existing attendance for the date
-      await supabase.from("attendance").delete().eq("date", dateStr);
-
-      // Insert new attendance records
       const records = Object.values(attendance).map((record) => ({
         student_id: record.student_id,
         date: dateStr,
         status: record.status,
-        time_in: record.time_in,
-        notes: record.notes || null,
+        time_in: record.time_in || "",
+        notes: record.notes || "",
       }));
 
-      const { error } = await supabase.from("attendance").insert(records);
-
-      if (error) throw error;
-
+      saveAttendance(dateStr, records);
       toast.success("Attendance saved successfully");
     } catch (error) {
       toast.error("Failed to save attendance");

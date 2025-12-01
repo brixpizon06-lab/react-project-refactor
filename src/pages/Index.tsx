@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import StatCard from "@/components/StatCard";
 import { Users, UserCheck, UserX, Clock, TrendingUp } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { getStudents, getAttendanceByDate, getAttendance } from "@/lib/storage";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
 
@@ -22,19 +22,11 @@ const Index = () => {
     fetchRecentActivity();
   }, []);
 
-  const fetchStats = async () => {
+  const fetchStats = () => {
     const today = format(new Date(), "yyyy-MM-dd");
-
-    // Get total students
-    const { count: totalStudents } = await supabase
-      .from("students")
-      .select("*", { count: "exact", head: true });
-
-    // Get today's attendance
-    const { data: todayAttendance } = await supabase
-      .from("attendance")
-      .select("status")
-      .eq("date", today);
+    const students = getStudents();
+    const totalStudents = students.length;
+    const todayAttendance = getAttendanceByDate(today);
 
     const presentToday = todayAttendance?.filter((a) => a.status === "present").length || 0;
     const absentToday = todayAttendance?.filter((a) => a.status === "absent").length || 0;
@@ -51,21 +43,26 @@ const Index = () => {
     });
   };
 
-  const fetchRecentActivity = async () => {
-    const { data } = await supabase
-      .from("attendance")
-      .select(`
-        *,
-        students (
-          first_name,
-          last_name,
-          student_id
-        )
-      `)
-      .order("created_at", { ascending: false })
-      .limit(5);
+  const fetchRecentActivity = () => {
+    const allAttendance = getAttendance();
+    const students = getStudents();
+    
+    const recentData = allAttendance
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5)
+      .map(record => {
+        const student = students.find(s => s.id === record.student_id);
+        return {
+          ...record,
+          students: student ? {
+            first_name: student.first_name,
+            last_name: student.last_name,
+            student_id: student.student_id
+          } : null
+        };
+      });
 
-    setRecentActivity(data || []);
+    setRecentActivity(recentData);
   };
 
   return (

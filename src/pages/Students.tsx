@@ -12,22 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Plus, Search, Edit, Trash2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { getStudents, addStudent, updateStudent, deleteStudent, Student } from "@/lib/storage";
 import { toast } from "sonner";
-
-interface Student {
-  id: string;
-  student_id: string;
-  first_name: string;
-  last_name: string;
-  grade: string;
-  section: string;
-  contact_number: string;
-  guardian_name: string;
-  guardian_contact: string;
-  email: string;
-  password?: string;
-}
 
 const Students = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -51,41 +37,19 @@ const Students = () => {
     fetchStudents();
   }, []);
 
-  const fetchStudents = async () => {
-    const { data, error } = await supabase
-      .from("students")
-      .select("*")
-      .order("last_name", { ascending: true });
-
-    if (error) {
-      toast.error("Failed to fetch students");
-      return;
-    }
-
+  const fetchStudents = () => {
+    const data = getStudents();
     setStudents(data || []);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (editingStudent) {
-      const { error } = await supabase
-        .from("students")
-        .update(formData)
-        .eq("id", editingStudent.id);
-
-      if (error) {
-        toast.error("Failed to update student");
-        return;
-      }
+    if (editingStudent && editingStudent.id) {
+      updateStudent(editingStudent.id, formData);
       toast.success("Student updated successfully");
     } else {
-      const { error } = await supabase.from("students").insert([formData]);
-
-      if (error) {
-        toast.error("Failed to add student");
-        return;
-      }
+      addStudent(formData);
       toast.success("Student added successfully");
     }
 
@@ -94,16 +58,10 @@ const Students = () => {
     fetchStudents();
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!confirm("Are you sure you want to delete this student?")) return;
 
-    const { error } = await supabase.from("students").delete().eq("id", id);
-
-    if (error) {
-      toast.error("Failed to delete student");
-      return;
-    }
-
+    deleteStudent(id);
     toast.success("Student deleted successfully");
     fetchStudents();
   };
