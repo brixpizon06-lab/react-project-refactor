@@ -12,7 +12,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Download } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { getStudents, getAttendance } from "@/lib/storage";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -38,15 +38,12 @@ const Reports = () => {
     fetchReports();
   }, [selectedMonth]);
 
-  const fetchReports = async () => {
+  const fetchReports = () => {
     setLoading(true);
     const startDate = format(startOfMonth(selectedMonth), "yyyy-MM-dd");
     const endDate = format(endOfMonth(selectedMonth), "yyyy-MM-dd");
 
-    const { data: students } = await supabase
-      .from("students")
-      .select("*")
-      .order("last_name", { ascending: true });
+    const students = getStudents();
 
     if (!students) {
       setLoading(false);
@@ -54,14 +51,12 @@ const Reports = () => {
     }
 
     const reportsData: AttendanceReport[] = [];
+    const allAttendance = getAttendance();
 
     for (const student of students) {
-      const { data: attendance } = await supabase
-        .from("attendance")
-        .select("status")
-        .eq("student_id", student.id)
-        .gte("date", startDate)
-        .lte("date", endDate);
+      const attendance = allAttendance.filter(
+        (a) => a.student_id === student.id && a.date >= startDate && a.date <= endDate
+      );
 
       const present = attendance?.filter((a) => a.status === "present").length || 0;
       const absent = attendance?.filter((a) => a.status === "absent").length || 0;
