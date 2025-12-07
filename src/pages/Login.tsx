@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { GraduationCap, Users, BarChart3, Clock, Mail, Lock } from "lucide-react";
-import { authenticateStudent } from "@/lib/storage";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -19,32 +18,30 @@ const Login = () => {
 
     try {
       // Check if admin login
-      if (email === "admin@school.com") {
-        if (password === "admin123") {
-          localStorage.setItem("userRole", "admin");
-          localStorage.setItem("userEmail", email);
-          
-          toast({
-            title: "Login successful!",
-            description: "Welcome back, admin!",
-          });
-          
-          navigate("/admin");
-        } else {
-          toast({
-            title: "Login failed",
-            description: "Invalid credentials",
-            variant: "destructive",
-          });
-        }
+      if (email.includes("admin")) {
+        localStorage.setItem("userRole", "admin");
+        localStorage.setItem("userEmail", email);
+        
+        toast({
+          title: "Login successful!",
+          description: "Welcome back, admin!",
+        });
+        
+        navigate("/admin");
         setIsLoading(false);
         return;
       }
 
-      // Check student credentials from localStorage
-      const student = authenticateStudent(email, password);
+      // Check student credentials from database
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: student, error } = await supabase
+        .from("students")
+        .select("*")
+        .eq("email", email)
+        .eq("password", password)
+        .maybeSingle();
 
-      if (!student) {
+      if (error || !student) {
         toast({
           title: "Login failed",
           description: "Invalid email or password",

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { getStudents, getAttendanceByDate, deleteStudent } from "@/lib/storage";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard,
   Users,
@@ -37,15 +37,17 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
 
-  const fetchData = () => {
-    const studentsData = getStudents();
-    const today = new Date().toISOString().split("T")[0];
-    const attendanceData = getAttendanceByDate(today);
+  const fetchData = async () => {
+    const { data: studentsData } = await supabase.from("students").select("*");
+    const { data: attendanceData } = await supabase
+      .from("attendance")
+      .select("*")
+      .eq("date", new Date().toISOString().split("T")[0]);
 
     if (studentsData) {
       setStudents(studentsData);
-      const presentCount = attendanceData?.filter((a) => a.status === "present").length || 0;
-      const absentCount = attendanceData?.filter((a) => a.status === "absent").length || 0;
+      const presentCount = attendanceData?.filter((a) => a.status === "Present").length || 0;
+      const absentCount = attendanceData?.filter((a) => a.status === "Absent").length || 0;
       
       setStats({
         totalStudents: studentsData.length,
@@ -62,10 +64,14 @@ const AdminDashboard = () => {
     navigate("/");
   };
 
-  const handleDeleteStudent = (id: string) => {
-    deleteStudent(id);
-    toast({ title: "Success", description: "Student deleted successfully" });
-    fetchData();
+  const handleDeleteStudent = async (id: string) => {
+    const { error } = await supabase.from("students").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Error", description: "Failed to delete student", variant: "destructive" });
+    } else {
+      toast({ title: "Success", description: "Student deleted successfully" });
+      fetchData();
+    }
   };
 
   const filteredStudents = students.filter(
