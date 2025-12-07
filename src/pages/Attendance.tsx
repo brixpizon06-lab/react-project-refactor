@@ -2,90 +2,76 @@ import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Check } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-
-interface Student {
-  id: string;
-  student_id: string;
-  first_name: string;
-  last_name: string;
-  grade: string;
-  section: string;
-}
-
-interface AttendanceRecord {
-  student_id: string;
-  status: "present" | "absent" | "late" | "excused";
-  time_in?: string;
-  notes?: string;
-}
+import { studentApi, attendanceApi, Student, AttendanceRecord } from "@/lib/api";
 
 const Attendance = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [attendance, setAttendance] = useState<Record<string, AttendanceRecord>>({});
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchStudents();
   }, []);
 
   useEffect(() => {
-    fetchAttendance();
+    if (students.length > 0) {
+      fetchAttendance();
+    }
   }, [selectedDate, students]);
 
   const fetchStudents = async () => {
-    const { data, error } = await supabase
-      .from("students")
-      .select("*")
-      .order("last_name", { ascending: true });
-
-    if (error) {
+    setLoading(true);
+    try {
+      const data = await studentApi.getAll();
+      setStudents(data || []);
+    } catch (error) {
       toast.error("Failed to fetch students");
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    setStudents(data || []);
   };
 
   const fetchAttendance = async () => {
     if (students.length === 0) return;
 
     const dateStr = format(selectedDate, "yyyy-MM-dd");
-    const { data } = await supabase
-      .from("attendance")
-      .select("*")
-      .eq("date", dateStr);
+    try {
+      const data = await attendanceApi.getByDate(dateStr);
+      
+      const attendanceMap: Record<string, AttendanceRecord> = {};
+      data?.forEach((record) => {
+        attendanceMap[record.student_id] = {
+          student_id: record.student_id,
+          date: record.date,
+          status: record.status,
+          time_in: record.time_in,
+          notes: record.notes,
+        };
+      });
 
-    const attendanceMap: Record<string, AttendanceRecord> = {};
-    
-    data?.forEach((record) => {
-      attendanceMap[record.student_id] = {
-        student_id: record.student_id,
-        status: record.status as "present" | "absent" | "late" | "excused",
-        time_in: record.time_in,
-        notes: record.notes,
-      };
-    });
-
-    setAttendance(attendanceMap);
+      setAttendance(attendanceMap);
+    } catch (error) {
+      // No attendance records for this date yet
+      setAttendance({});
+    }
   };
 
   const handleStatusChange = (studentId: string, status: AttendanceRecord["status"]) => {
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
     setAttendance((prev) => ({
       ...prev,
       [studentId]: {
         ...prev[studentId],
         student_id: studentId,
+        date: dateStr,
         status,
         time_in: status === "present" || status === "late" ? format(new Date(), "HH:mm") : undefined,
       },
@@ -97,22 +83,15 @@ const Attendance = () => {
     const dateStr = format(selectedDate, "yyyy-MM-dd");
 
     try {
-      // Delete existing attendance for the date
-      await supabase.from("attendance").delete().eq("date", dateStr);
-
-      // Insert new attendance records
       const records = Object.values(attendance).map((record) => ({
         student_id: record.student_id,
         date: dateStr,
         status: record.status,
         time_in: record.time_in,
-        notes: record.notes || null,
+        notes: record.notes || undefined,
       }));
 
-      const { error } = await supabase.from("attendance").insert(records);
-
-      if (error) throw error;
-
+      await attendanceApi.save(records);
       toast.success("Attendance saved successfully");
     } catch (error) {
       toast.error("Failed to save attendance");
@@ -207,41 +186,47 @@ const Attendance = () => {
         </div>
 
         <Card className="p-6">
-          <div className="space-y-4">
-            {students.map((student) => (
-              <div
-                key={student.id}
-                className="flex items-center justify-between p-4 rounded-lg bg-secondary/30 hover:bg-secondary transition-colors"
-              >
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground">
-                    {student.first_name} {student.last_name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {student.student_id} {student.grade && `• ${student.grade}`}
-                    {student.section && ` - ${student.section}`}
-                  </p>
+          {loading ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-lg">Loading students...</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {students.map((student) => (
+                <div
+                  key={student.id}
+                  className="flex items-center justify-between p-4 rounded-lg bg-secondary/30 hover:bg-secondary transition-colors"
+                >
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-foreground">
+                      {student.first_name} {student.last_name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {student.student_id} {student.grade && `• ${student.grade}`}
+                      {student.section && ` - ${student.section}`}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {(["present", "absent", "late", "excused"] as const).map((status) => (
+                      <Button
+                        key={status}
+                        size="sm"
+                        variant={attendance[student.id]?.status === status ? "default" : "outline"}
+                        className={cn(
+                          "capitalize min-w-20",
+                          attendance[student.id]?.status === status && getStatusColor(status)
+                        )}
+                        onClick={() => handleStatusChange(student.id, status)}
+                      >
+                        {status}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  {(["present", "absent", "late", "excused"] as const).map((status) => (
-                    <Button
-                      key={status}
-                      size="sm"
-                      variant={attendance[student.id]?.status === status ? "default" : "outline"}
-                      className={cn(
-                        "capitalize min-w-20",
-                        attendance[student.id]?.status === status && getStatusColor(status)
-                      )}
-                      onClick={() => handleStatusChange(student.id, status)}
-                    >
-                      {status}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          {students.length === 0 && (
+              ))}
+            </div>
+          )}
+          {!loading && students.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
               <p className="text-lg">No students found</p>
               <p className="text-sm mt-2">Add students first to mark attendance</p>
