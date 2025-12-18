@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import Layout from "@/components/Layout";
-import StatCard from "@/components/StatCard";
+import Layout from "@/frontend/components/Layout";
+import StatCard from "@/frontend/components/StatCard";
 import { Users, UserCheck, UserX, Clock, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";

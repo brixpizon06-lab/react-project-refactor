@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Layout from "@/components/Layout";
+import Layout from "@/frontend/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -25,19 +25,19 @@ import { toast } from "sonner";
 import { 
   fetchStudentById, 
   Student 
-} from "@/services/studentService";
+} from "@/backend/studentService";
 import { 
   fetchGradesByStudent, 
   createGrade, 
   deleteGrade,
   Grade,
   getGradeStats 
-} from "@/services/gradeService";
+} from "@/backend/gradeService";
 import {
   fetchAttendanceByStudent,
   AttendanceRecord,
   getAttendanceStats
-} from "@/services/attendanceService";
+} from "@/backend/attendanceService";
 
 const StudentDetail = () => {
   const { id } = useParams<{ id: string }>();
