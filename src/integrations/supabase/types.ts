@@ -55,6 +55,53 @@ export type Database = {
           },
         ]
       }
+      grades: {
+        Row: {
+          created_at: string
+          date: string
+          description: string | null
+          grade_type: string
+          grade_value: number
+          id: string
+          quarter: string | null
+          student_id: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          description?: string | null
+          grade_type?: string
+          grade_value: number
+          id?: string
+          quarter?: string | null
+          student_id: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string | null
+          grade_type?: string
+          grade_value?: number
+          id?: string
+          quarter?: string | null
+          student_id?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grades_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           contact_number: string | null
