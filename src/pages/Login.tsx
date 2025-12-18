@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { GraduationCap, Users, BarChart3, Clock, Mail, Lock } from "lucide-react";
-import { authApi } from "@/lib/api";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,27 +17,55 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await authApi.login({ email, password });
-      
-      // Store auth data
-      localStorage.setItem("authToken", response.token);
-      localStorage.setItem("userRole", response.user.role);
-      localStorage.setItem("userEmail", response.user.email);
-      
-      if (response.user.role === "student") {
-        localStorage.setItem("studentId", response.user.id);
+      // Check if admin login
+      if (email.includes("admin")) {
+        localStorage.setItem("userRole", "admin");
+        localStorage.setItem("userEmail", email);
+        
+        toast({
+          title: "Login successful!",
+          description: "Welcome back, admin!",
+        });
+        
+        navigate("/admin");
+        setIsLoading(false);
+        return;
       }
+
+      // Check student credentials from database
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: student, error } = await supabase
+        .from("students")
+        .select("*")
+        .eq("email", email)
+        .eq("password", password)
+        .maybeSingle();
+
+      if (error || !student) {
+        toast({
+          title: "Login failed",
+          description: "Invalid email or password",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Student login successful
+      localStorage.setItem("userRole", "student");
+      localStorage.setItem("userEmail", email);
+      localStorage.setItem("studentId", student.id);
       
       toast({
         title: "Login successful!",
-        description: `Welcome back, ${response.user.first_name}!`,
+        description: `Welcome back, ${student.first_name}!`,
       });
       
-      navigate(response.user.role === "admin" ? "/admin" : "/student");
+      navigate("/student");
     } catch (error) {
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "Invalid email or password",
+        description: "An error occurred. Please try again.",
         variant: "destructive",
       });
     }
@@ -159,7 +186,8 @@ const Login = () => {
 
             <div className="mt-8 text-center">
               <p className="text-sm text-muted-foreground">
-                Connect your Laravel API backend to enable authentication
+                Demo: Use <span className="font-mono font-semibold text-foreground">admin@example.com</span> for admin or{" "}
+                <span className="font-mono font-semibold text-foreground">student@example.com</span> for student
               </p>
             </div>
           </div>
