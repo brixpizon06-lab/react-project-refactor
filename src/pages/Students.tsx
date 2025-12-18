@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -30,6 +31,7 @@ interface Student {
 }
 
 const Students = () => {
+  const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -315,7 +317,11 @@ const Students = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredStudents.map((student) => (
-            <Card key={student.id} className="p-6 hover:shadow-lg transition-shadow">
+            <Card 
+              key={student.id} 
+              className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => navigate(`/students/${student.id}`)}
+            >
               <div className="space-y-4">
                 <div className="flex items-start justify-between">
                   <div>
@@ -328,14 +334,21 @@ const Students = () => {
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => handleEdit(student)}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/students/${student.id}`); }}
+                    >
+                      <Eye className="w-4 h-4 text-primary" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={(e) => { e.stopPropagation(); handleEdit(student); }}
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => handleDelete(student.id)}
+                      onClick={(e) => { e.stopPropagation(); handleDelete(student.id); }}
                     >
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
