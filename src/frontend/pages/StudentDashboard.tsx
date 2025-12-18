@@ -10,21 +10,21 @@ import {
   User,
   BookOpen,
 } from "lucide-react";
-import ThemeToggle from "@/components/ThemeToggle";
+import ThemeToggle from "@/frontend/components/ThemeToggle";
 import { 
   fetchStudentById, 
   Student 
-} from "@/services/studentService";
+} from "@/backend/studentService";
 import { 
   fetchGradesByStudent, 
   getGradeStats,
   Grade 
-} from "@/services/gradeService";
+} from "@/backend/gradeService";
 import {
   fetchAttendanceByStudent,
   getAttendanceStats,
   AttendanceRecord
-} from "@/services/attendanceService";
+} from "@/backend/attendanceService";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();

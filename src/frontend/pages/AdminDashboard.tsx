@@ -15,8 +15,8 @@ import {
   Edit,
   Trash2,
 } from "lucide-react";
-import StatCard from "@/components/StatCard";
-import ThemeToggle from "@/components/ThemeToggle";
+import StatCard from "@/frontend/components/StatCard";
+import ThemeToggle from "@/frontend/components/ThemeToggle";
 
 type View = "dashboard" | "students" | "attendance" | "reports";
 
